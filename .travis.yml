@@ -1,6 +1,8 @@
 language: node_js
-node_js: 
-  - "stable"
-cache:
-  directories:
-    - "node_modules"
+node_js: lts/*
+script: echo "script"
+install: true
+deploy:
+  provider: firebase
+  token:
+    secure: "1/yBbwJyTIEs2g1ImNSfT_hpSlEoBU1PF84vfuglymzkc"
