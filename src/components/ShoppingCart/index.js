@@ -25,7 +25,7 @@ export default class ShoppingCart extends Component {
               <div>
                 <CartItems cart={this.props.cart} remove={this.props.remove} />
                 <hr />
-                <Checkout total={totalPrice} />
+                <Checkout checkout={this.props.checkout} total={totalPrice} />
               </div>
               :
               <div>

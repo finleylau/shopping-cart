@@ -10,7 +10,7 @@ export default class Checkout extends Component {
             {`Total Price: $${this.props.total}`}
           </Col>
           <Col md={3}>
-            <Button>Checkout</Button>
+            <Button onClick={this.props.checkout}>Checkout</Button>
           </Col>
         </Row>
       </div>

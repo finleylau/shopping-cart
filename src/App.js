@@ -13,7 +13,8 @@ import 'firebase/database'
 
 firebase.initializeApp({
   apiKey: process.env.REACT_APP_FIREBASE_API,
-  authDomain: process.env.REACT_APP_FIREBASE_URL
+  authDomain: process.env.REACT_APP_FIREBASE_URL,
+  databaseURL: process.env.REACT_APP_DATABASE
 })
 
 class App extends Component {
@@ -21,7 +22,7 @@ class App extends Component {
     super(props)
 
     this.state = {
-      data: data.products,
+      data: [],
       cart: [],
       cartOpen: false,
       itemCount: 0,
@@ -49,17 +50,57 @@ class App extends Component {
       }
     }
 
+    this.db = firebase.database();
     this.auth = firebase.auth()
   }
 
   componentDidMount() {
+    this.data().once('value', snapshot => {
+      let existing = snapshot.val()
+
+      if (existing) {
+        this.setState({
+          data: Object.keys(existing).map(key => ({
+            ...existing[key]
+          }))
+        })
+      }
+    })
+
     this.auth.onAuthStateChanged(user => {
       this.setState({
         isLoggedIn: !!user,
         currentUser: user
       })
+
+      if (user) {
+        this.cart(user.uid).once('value', snapshot => {
+          let existing = snapshot.val()
+          
+          if (existing) {
+            let cart = Object.keys(existing).map(key => ({
+              ...existing[key]
+            }))
+  
+            this.setState({
+              itemCount: cart.length,
+              cart: cart
+            })
+          }
+
+        })
+      } else {
+        this.setState({
+          itemCount: 0,
+          cart: []
+        })
+      }
     })
   }
+
+  user = uid => this.db.ref(`users/${uid}`)
+  cart = uid => this.db.ref(`users/${uid}/cart`)
+  data = () => this.db.ref(`data`)
 
   toggleFilter(filter) {
     let { activeFilters } = this.state
@@ -96,10 +137,28 @@ class App extends Component {
       }
     }
 
+    this.cart(this.state.currentUser.uid).set(existing)
+
     this.setState({
       data: data,
       cart: existing,
       itemCount: this.state.itemCount + 1
+    })
+  }
+
+  checkout = () => {
+    this.data().set(this.state.data)
+    this.cart(this.state.currentUser.uid).set({})
+    this.setState({
+      cart: [],
+      itemCount: 0
+    })
+  }
+
+  reset = () => {
+    this.data().set(data.products)
+    this.setState({
+      data: data.products
     })
   }
 
@@ -131,6 +190,8 @@ class App extends Component {
         item.availableSizes[size] += 1
       }
     }
+
+    this.cart(this.state.currentUser.uid).set(existing)
 
     this.setState({
       data: data,
@@ -183,7 +244,9 @@ class App extends Component {
               toggle={this.toggleCart}
               open={this.state.cartOpen}
               remove={this.removeItemFromCart}
+              checkout={this.checkout}
             />
+            <Button onClick={this.reset} >Reset Availability</Button>
           </Col>
         </Row>
       </div>
